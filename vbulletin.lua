@@ -64,7 +64,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
 
     -- pages
     for f, o, p in string.gmatch(html, "forumdisplay%.php%?f=(%d+)&amp;order=(%l+)&amp;page=(%d+)") do
-      table.insert(urls, { url=(base.."/forumdisplay.php?f="..f.."&order="..o.."&page="..p"&amp;daysprune=-1"), link_expect_html=1 })
+      table.insert(urls, { url=(base.."/forumdisplay.php?f="..f.."&order="..o.."&page="..p.."&amp;daysprune=-1"), link_expect_html=1 })
     end
 
     -- all announcements
@@ -101,6 +101,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     -- members
     for u in string.gmatch(html, "member%.php%?u=(%d+)") do
       table.insert(urls, { url=(base.."/member.php?u="..u), link_expect_html=1 })
+	  table.insert(urls, { url=(base.."/member.php?u="..u.."&do=vcard"), link_expect_html=1 })
     end
 
     -- posts
