@@ -32,7 +32,7 @@ Example command line:
     --warc-max-size=200M \
     --warc-header="operator: Archive Team" \
     --warc-file=forums.steampowered.com-vbulletin-$( date +'%Y%m%d' ) \
-	--header="Cookie: bblastvisit=1495056394; __utmt=1; bblastactivity=0; bbsessionhash=03948598c9a709717277ba412e5ff352; bbforum_view=e62f44913aeb32d4ddc2ee89de61e6c886b6992da-2-%7Bi-14_i-1495057128_i-1189_i-1495057156_%7D; __utma=127613338.730818989.1493599611.1495044823.1495054243.8; __utmb=127613338.150.10.1495054243; __utmc=-127613338; __utmz=127613338.1494988830.5.3.utmcsr=chat.efnet.org:9090|utmccn=(referral)|utmcmd=referral|utmcct=/"
+        --header="Cookie: bblastvisit=1495056394; __utmt=1; bblastactivity=0; bbsessionhash=03948598c9a709717277ba412e5ff352; bbforum_view=e62f44913aeb32d4ddc2ee89de61e6c886b6992da-2-%7Bi-14_i-1495057128_i-1189_i-1495057156_%7D; __utma=127613338.730818989.1493599611.1495044823.1495054243.8; __utmb=127613338.150.10.1495054243; __utmc=-127613338; __utmz=127613338.1494988830.5.3.utmcsr=chat.efnet.org:9090|utmccn=(referral)|utmcmd=referral|utmcct=/"
     "http://forums.steampowered.com/forums/forumdisplay.php?f=123"
 
 --]]
@@ -56,14 +56,14 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     print(" - Downloaded "..url_count.." URLs")
   end
 
-  base, forum_id = string.match(url, "(http://.+)/forumdisplay%.php%?f=(%d+)&amp;daysprune=-1")
+  base, forum_id = string.match(url, "(http://.+)/forumdisplay%.php%?f=(%d+)")
   if base then
     -- a forum page: listing subforums, anouncements and/or threads
     -- NOTE: this step does not explore subforums
     html = read_file(file)
 
     -- pages
-    for f, o, p in string.gmatch(html, "forumdisplay%.php%?f=(%d+)&amp;order=(%l+)&amp;page=(%d+)") do
+    for f, o, p in string.gmatch(html, "forumdisplay%.php%?f=(%d+)&amp;order=(%l+)&amp;daysprune=-1&amp;page=(%d+)") do
       table.insert(urls, { url=(base.."/forumdisplay.php?f="..f.."&order="..o.."&page="..p.."&amp;daysprune=-1"), link_expect_html=1 })
     end
 
@@ -101,7 +101,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     -- members
     for u in string.gmatch(html, "member%.php%?u=(%d+)") do
       table.insert(urls, { url=(base.."/member.php?u="..u), link_expect_html=1 })
-	  table.insert(urls, { url=(base.."/member.php?u="..u.."&do=vcard"), link_expect_html=1 })
+          table.insert(urls, { url=(base.."/member.php?u="..u.."&do=vcard"), link_expect_html=1 })
     end
 
     -- posts
@@ -112,6 +112,6 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
 
     return urls
   end
-  
+
   return {}
 end
