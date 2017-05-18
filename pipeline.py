@@ -14,7 +14,7 @@ from seesaw.tracker import *
 
 DATA_DIR = "data"
 USER_AGENT = "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27"
-VERSION = "20170517.02"
+VERSION = "20170517.03"
 
 class PrepareDirectories(SimpleTask):
   def __init__(self):
@@ -63,7 +63,7 @@ project = Project(
   title = "Steam Users' Forum",
   project_html = """
     <img class="project-logo" alt="Steam Logo" src="http://archiveteam.org/images/4/48/Steam_Icon_2014.png" />
-    <h2>Steam Users' Forum <span class="links"><a href="http://forums.steampowered.com/forums">Website</a> &middot; <a href="http://tracker.archiveteam.org/spuf-save/">Leaderboard</a></span></h2>
+    <h2>Steam Users' Forum <span class="links"><a href="http://forums.steampowered.com/forums">Website</a> &middot; <a href="http://tracker.archiveteam.org/spuf-grab/">Leaderboard</a></span></h2>
     <p>Getting killed June 5th.</p>
   """,
   utc_deadline = datetime.datetime(2017,06,04, 23,59,0)
