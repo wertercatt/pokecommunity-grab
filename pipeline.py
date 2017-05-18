@@ -14,7 +14,7 @@ from seesaw.tracker import *
 
 DATA_DIR = "data"
 USER_AGENT = "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27"
-VERSION = "20170517.00"
+VERSION = "20170517.01"
 
 class PrepareDirectories(SimpleTask):
   def __init__(self):
@@ -87,21 +87,22 @@ pipeline = Pipeline(
       "--timeout", "10",
       "--tries", "3",
       "--waitretry", "5",
+	  "--header", "Cookie: bblastvisit=1495056394; __utmt=1; bblastactivity=0; bbsessionhash=03948598c9a709717277ba412e5ff352; bbforum_view=e62f44913aeb32d4ddc2ee89de61e6c886b6992da-2-%7Bi-14_i-1495057128_i-1189_i-1495057156_%7D; __utma=127613338.730818989.1493599611.1495044823.1495054243.8; __utmb=127613338.150.10.1495054243; __utmc=-127613338; __utmz=127613338.1494988830.5.3.utmcsr=chat.efnet.org:9090|utmccn=(referral)|utmcmd=referral|utmcct=/"
       "--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
       "--warc-header", "operator: Archive Team",
       "--warc-header", "spuf-grab-script-version: " + VERSION,
       "--warc-header", ItemInterpolation("spuf-threads-range: %(item_name)s"),
       ItemInterpolation("http://forums.steampowered.com/forums/external.php?type=RSS2"), # initializes the cookies
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s0"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s2"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s3"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s4"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s5"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s6"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s7"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s8"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s9")
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s0&amp;daysprune=-1"),
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s1&amp;daysprune=-1"),
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s2&amp;daysprune=-1"),
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s3&amp;daysprune=-1"),
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s4&amp;daysprune=-1"),
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s5&amp;daysprune=-1"),
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s6&amp;daysprune=-1"),
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s7&amp;daysprune=-1"),
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s8&amp;daysprune=-1"),
+      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s9&amp;daysprune=-1")
     ],
     max_tries = 2,
     accept_on_exit_code = [ 0, 4, 6, 8 ],
