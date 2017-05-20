@@ -55,7 +55,8 @@ allowed = function(url, parenturl)
     end
   end
 
-  if item_type == "threads" or item_type == "forums" then
+  if (item_type == "threads" or item_type == "forums")
+     and string.match(url, "^https?://[^/]*steampowered%.com") then
     for id in string.gmatch(url, "([0-9]+)") do
       if ids[tonumber(id)] == true then
         return true
