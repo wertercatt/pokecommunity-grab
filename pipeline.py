@@ -1,137 +1,285 @@
-import time
-import os
+# encoding=utf8
+import datetime
+from distutils.version import StrictVersion
+import hashlib
 import os.path
+import random
+from seesaw.config import realize, NumberConfigValue
+from seesaw.externalprocess import ExternalProcess
+from seesaw.item import ItemInterpolation, ItemValue
+from seesaw.task import SimpleTask, LimitConcurrent
+from seesaw.tracker import GetItemFromTracker, PrepareStatsForTracker, \
+    UploadWithTracker, SendDoneToTracker
 import shutil
-import glob
+import socket
+import subprocess
+import sys
+import time
+import string
 
-from seesaw.project import *
-from seesaw.config import *
-from seesaw.item import *
-from seesaw.task import *
-from seesaw.pipeline import *
-from seesaw.externalprocess import *
-from seesaw.tracker import *
+import seesaw
+from seesaw.externalprocess import WgetDownload
+from seesaw.pipeline import Pipeline
+from seesaw.project import Project
+from seesaw.util import find_executable
 
-DATA_DIR = "data"
-USER_AGENT = "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27"
-VERSION = "20170517.04"
+
+# check the seesaw version
+if StrictVersion(seesaw.__version__) < StrictVersion("0.8.5"):
+    raise Exception("This pipeline needs seesaw version 0.8.5 or higher.")
+
+
+###########################################################################
+# Find a useful Wget+Lua executable.
+#
+# WGET_LUA will be set to the first path that
+# 1. does not crash with --version, and
+# 2. prints the required version string
+WGET_LUA = find_executable(
+    "Wget+Lua",
+    ["GNU Wget 1.14.lua.20130523-9a5c", "GNU Wget 1.14.lua.20160530-955376b"],
+    [
+        "./wget-lua",
+        "./wget-lua-warrior",
+        "./wget-lua-local",
+        "../wget-lua",
+        "../../wget-lua",
+        "/home/warrior/wget-lua",
+        "/usr/bin/wget-lua"
+    ]
+)
+
+if not WGET_LUA:
+    raise Exception("No usable Wget+Lua found.")
+
+
+###########################################################################
+# The version number of this pipeline definition.
+#
+# Update this each time you make a non-cosmetic change.
+# It will be added to the WARC files and reported to the tracker.
+VERSION = "20170519.01"
+USER_AGENT = 'ArchiveTeam'
+TRACKER_ID = 'spuf'
+TRACKER_HOST = 'tracker.archiveteam.org'
+
+
+###########################################################################
+# This section defines project-specific tasks.
+#
+# Simple tasks (tasks that do not need any concurrency) are based on the
+# SimpleTask class and have a process(item) method that is called for
+# each item.
+class CheckIP(SimpleTask):
+    def __init__(self):
+        SimpleTask.__init__(self, "CheckIP")
+        self._counter = 0
+
+    def process(self, item):
+        # NEW for 2014! Check if we are behind firewall/proxy
+
+        if self._counter <= 0:
+            item.log_output('Checking IP address.')
+            ip_set = set()
+
+            ip_set.add(socket.gethostbyname('twitter.com'))
+            ip_set.add(socket.gethostbyname('facebook.com'))
+            ip_set.add(socket.gethostbyname('youtube.com'))
+            ip_set.add(socket.gethostbyname('microsoft.com'))
+            ip_set.add(socket.gethostbyname('icanhas.cheezburger.com'))
+            ip_set.add(socket.gethostbyname('archiveteam.org'))
+
+            if len(ip_set) != 6:
+                item.log_output('Got IP addresses: {0}'.format(ip_set))
+                item.log_output(
+                    'Are you behind a firewall/proxy? That is a big no-no!')
+                raise Exception(
+                    'Are you behind a firewall/proxy? That is a big no-no!')
+
+        # Check only occasionally
+        if self._counter <= 0:
+            self._counter = 10
+        else:
+            self._counter -= 1
+
 
 class PrepareDirectories(SimpleTask):
-  def __init__(self):
-    SimpleTask.__init__(self, "PrepareDirectories")
+    def __init__(self, warc_prefix):
+        SimpleTask.__init__(self, "PrepareDirectories")
+        self.warc_prefix = warc_prefix
 
-  def process(self, item):
-    item_name = item["item_name"]
-    dirname = "/".join(( DATA_DIR, item_name ))
+    def process(self, item):
+        item_name = item["item_name"]
+        escaped_item_name = item_name.replace(':', '_').replace('/', '_').replace('~', '_')
+        dirname = "/".join((item["data_dir"], escaped_item_name))
 
-    if os.path.isdir(dirname):
-      shutil.rmtree(dirname)
+        if os.path.isdir(dirname):
+            shutil.rmtree(dirname)
 
-    os.makedirs(dirname + "/files")
+        os.makedirs(dirname)
 
-    item["item_dir"] = dirname
-    item["data_dir"] = DATA_DIR
-    item["warc_file_base"] = "forums.steampowered.com-threads-range-%s-%s" % (item_name, time.strftime("%Y%m%d-%H%M%S"))
+        item["item_dir"] = dirname
+        item["warc_file_base"] = "%s-%s-%s" % (self.warc_prefix, escaped_item_name,
+            time.strftime("%Y%m%d-%H%M%S"))
+
+        open("%(item_dir)s/%(warc_file_base)s.warc.gz" % item, "w").close()
+
 
 class MoveFiles(SimpleTask):
-  def __init__(self):
-    SimpleTask.__init__(self, "MoveFiles")
+    def __init__(self):
+        SimpleTask.__init__(self, "MoveFiles")
 
-  def process(self, item):
-    os.rename("%(item_dir)s/%(warc_file_base)s.warc.gz" % item,
+    def process(self, item):
+        # NEW for 2014! Check if wget was compiled with zlib support
+        if os.path.exists("%(item_dir)s/%(warc_file_base)s.warc" % item):
+            raise Exception('Please compile wget with zlib support!')
+
+        os.rename("%(item_dir)s/%(warc_file_base)s.warc.gz" % item,
               "%(data_dir)s/%(warc_file_base)s.warc.gz" % item)
 
-    shutil.rmtree("%(item_dir)s" % item)
-
-class DeleteFiles(SimpleTask):
-  def __init__(self):
-    SimpleTask.__init__(self, "DeleteFiles")
-
-  def process(self, item):
-    os.unlink("%(data_dir)s/%(warc_file_base)s.warc.gz" % item)
-
-def calculate_item_id(item):
-  thread_htmls = glob.glob("%(item_dir)s/files/forums.steampowered.com/showthread.php*" % item)
-  n = len(thread_htmls)
-  if n == 0:
-    return "null"
-  else:
-    return thread_htmls[0] + "-" + thread_htmls[n-1]
+        shutil.rmtree("%(item_dir)s" % item)
 
 
+def get_hash(filename):
+    with open(filename, 'rb') as in_file:
+        return hashlib.sha1(in_file.read()).hexdigest()
+
+CWD = os.getcwd()
+PIPELINE_SHA1 = get_hash(os.path.join(CWD, 'pipeline.py'))
+LUA_SHA1 = get_hash(os.path.join(CWD, 'spuf.lua'))
+
+def stats_id_function(item):
+    # NEW for 2014! Some accountability hashes and stats.
+    d = {
+        'pipeline_hash': PIPELINE_SHA1,
+        'lua_hash': LUA_SHA1,
+        'python_version': sys.version,
+    }
+
+    return d
+
+
+class WgetArgs(object):
+    def realize(self, item):
+        wget_args = [
+            WGET_LUA,
+            "-U", USER_AGENT,
+            "-nv",
+            #"--no-cookies",
+            "--lua-script", "spuf.lua",
+            "-o", ItemInterpolation("%(item_dir)s/wget.log"),
+            "--no-check-certificate",
+            "--output-document", ItemInterpolation("%(item_dir)s/wget.tmp"),
+            "--truncate-output",
+            "-e", "robots=off",
+            "--rotate-dns",
+            "--recursive", "--level=inf",
+            "--no-parent",
+            "--page-requisites",
+            "--timeout", "30",
+            "--tries", "inf",
+            "--domains", "steampowered.com",
+            "--span-hosts",
+            "--waitretry", "30",
+            "--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
+            "--warc-header", "operator: Archive Team",
+            "--warc-header", "steam-users-forum-dld-script-version: " + VERSION,
+            "--warc-header", ItemInterpolation("steam-users-forum-item: %(item_name)s"),
+        ]
+
+        item_name = item['item_name']
+        assert ':' in item_name
+        item_type, item_value = item_name.split(':', 1)
+
+        item['item_type'] = item_type
+        item['item_value'] = item_value
+
+        wget_args.append('http://forums.steampowered.com/forums/showthread.php')
+
+        if item_type == 'threads':
+            start, stop = item_value.split('-')
+            for i in range(int(start), int(stop)+1):
+                wget_args.extend(['--warc-header', 'steam-users-forum-thread: {i}'.format(i=i)])
+                wget_args.append('http://forums.steampowered.com/forums/showthread.php?t={i}'.format(i=i))
+        elif item_type == 'forums':
+            start, stop = item_value.split('-')
+            for i in range(int(start), int(stop)+1):
+                wget_args.extend(['--warc-header', 'steam-users-forum-forum: {i}'.format(i=i)])
+                wget_args.append('http://forums.steampowered.com/forums/forumdisplay.php?f={i}&daysprune=-1'.format(i=i))
+                wget_args.append('http://forums.steampowered.com/forums/forumdisplay.php?f={i}'.format(i=i))
+        else:
+            raise Exception('Unknown item')
+
+        if 'bind_address' in globals():
+            wget_args.extend(['--bind-address', globals()['bind_address']])
+            print('')
+            print('*** Wget will bind address at {0} ***'.format(
+                globals()['bind_address']))
+            print('')
+
+        return realize(wget_args, item)
+
+###########################################################################
+# Initialize the project.
+#
+# This will be shown in the warrior management panel. The logo should not
+# be too big. The deadline is optional.
 project = Project(
-  title = "Steam Users' Forum",
-  project_html = """
+    title = "Steam Users' Forum",
+    project_html = """
     <img class="project-logo" alt="Steam Logo" src="http://archiveteam.org/images/4/48/Steam_Icon_2014.png" />
     <h2>Steam Users' Forum <span class="links"><a href="http://forums.steampowered.com/forums">Website</a> &middot; <a href="http://tracker.archiveteam.org/spuf-grab/">Leaderboard</a></span></h2>
     <p>Getting killed June 5th.</p>
-  """,
-  utc_deadline = datetime.datetime(2017,06,04, 23,59,0)
+    """,
+    utc_deadline = datetime.datetime(2017,06,04, 23,59,0)
 )
 
 pipeline = Pipeline(
-  GetItemFromTracker("http://tracker.archiveteam.org/spuf-grab", downloader, VERSION),
-  PrepareDirectories(),
-  WgetDownload([ "./wget-lua",
-      "-U", USER_AGENT,
-      "-nv",
-      "-o", ItemInterpolation("%(item_dir)s/wget.log"),
-      "--directory-prefix", ItemInterpolation("%(item_dir)s/files"),
-      "--keep-session-cookies",
-      "--save-cookies", ItemInterpolation("%(item_dir)s/files/cookies.txt"),
-      "--force-directories",
-      "--adjust-extension",
-      "-e", "robots=off",
-      "--page-requisites", "--span-hosts",
-      "--lua-script", "vbulletin.lua",
-      "--timeout", "10",
-      "--tries", "3",
-      "--waitretry", "5",
-	  "--header", "Cookie: bblastvisit=1495056394; __utmt=1; bblastactivity=0; bbsessionhash=03948598c9a709717277ba412e5ff352; bbforum_view=e62f44913aeb32d4ddc2ee89de61e6c886b6992da-2-%7Bi-14_i-1495057128_i-1189_i-1495057156_%7D; __utma=127613338.730818989.1493599611.1495044823.1495054243.8; __utmb=127613338.150.10.1495054243; __utmc=-127613338; __utmz=127613338.1494988830.5.3.utmcsr=chat.efnet.org:9090|utmccn=(referral)|utmcmd=referral|utmcct=/"
-      "--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
-      "--warc-header", "operator: Archive Team",
-      "--warc-header", "spuf-grab-script-version: " + VERSION,
-      "--warc-header", ItemInterpolation("spuf-threads-range: %(item_name)s"),
-      ItemInterpolation("http://forums.steampowered.com/forums/external.php?type=RSS2"), # initializes the cookies
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s0&amp;daysprune=-1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s1&amp;daysprune=-1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s2&amp;daysprune=-1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s3&amp;daysprune=-1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s4&amp;daysprune=-1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s5&amp;daysprune=-1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s6&amp;daysprune=-1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s7&amp;daysprune=-1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s8&amp;daysprune=-1"),
-      ItemInterpolation("http://forums.steampowered.com/forums/showthread.php?t=%(item_name)s9&amp;daysprune=-1")
-    ],
-    max_tries = 2,
-    accept_on_exit_code = [ 0, 4, 6, 8 ],
-  ),
-  PrepareStatsForTracker(
-    defaults = { "downloader": downloader, "version": VERSION },
-    file_groups = {
-      "data": [ ItemInterpolation("%(item_dir)s/%(warc_file_base)s.warc.gz") ]
-    },
-    id_function = calculate_item_id
-  ),
-  MoveFiles(),
-  LimitConcurrent(1,
-    RsyncUpload(
-      target = ConfigInterpolation("fos.textfiles.com::alardland/warrior/spuf-grab/%s/", downloader),
-      target_source_path = ItemInterpolation("%(data_dir)s/"),
-      files = [
-        ItemInterpolation("%(warc_file_base)s.warc.gz")
-      ],
-      extra_args = [
-        "--partial",
-        "--partial-dir", ".rsync-tmp"
-      ]
+    CheckIP(),
+    GetItemFromTracker("http://%s/%s" % (TRACKER_HOST, TRACKER_ID), downloader,
+        VERSION),
+    PrepareDirectories(warc_prefix="spuf"),
+    WgetDownload(
+        WgetArgs(),
+        max_tries=2,
+        accept_on_exit_code=[0, 4, 8],
+        env={
+            "item_dir": ItemValue("item_dir"),
+            "item_value": ItemValue("item_value"),
+            "item_type": ItemValue("item_type"),
+            "warc_file_base": ItemValue("warc_file_base"),
+        }
     ),
-  ),
-  SendDoneToTracker(
-    tracker_url = "http://tracker.archiveteam.org/spuf-grab",
-    stats = ItemValue("stats")
-  ),
-  DeleteFiles()
+    PrepareStatsForTracker(
+        defaults={"downloader": downloader, "version": VERSION},
+        file_groups={
+            "data": [
+                ItemInterpolation("%(item_dir)s/%(warc_file_base)s.warc.gz")
+            ]
+        },
+        id_function=stats_id_function,
+    ),
+    MoveFiles(),
+    LimitConcurrent(NumberConfigValue(min=1, max=4, default="1",
+        name="shared:rsync_threads", title="Rsync threads",
+        description="The maximum number of concurrent uploads."),
+        UploadWithTracker(
+            "http://%s/%s" % (TRACKER_HOST, TRACKER_ID),
+            downloader=downloader,
+            version=VERSION,
+            files=[
+                ItemInterpolation("%(data_dir)s/%(warc_file_base)s.warc.gz")
+            ],
+            rsync_target_source_path=ItemInterpolation("%(data_dir)s/"),
+            rsync_extra_args=[
+                "--recursive",
+                "--partial",
+                "--partial-dir", ".rsync-tmp",
+            ]
+        ),
+    ),
+    SendDoneToTracker(
+        tracker_url="http://%s/%s" % (TRACKER_HOST, TRACKER_ID),
+        stats=ItemValue("stats")
+    )
 )
-

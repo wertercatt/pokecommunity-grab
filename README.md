@@ -1,4 +1,4 @@
-spuf-save
+spuf-grab
 =============
 
 More information about the archiving project can be found on the ArchiveTeam wiki: [Steam Users' Forum](http://archiveteam.org/index.php?title=Steam#Steam_Users.27_Forums)
@@ -58,8 +58,8 @@ Distribution-specific setup
     adduser --system --group --shell /bin/bash archiveteam
     apt-get update && apt-get install -y git-core libgnutls-dev lua5.1 liblua5.1-0 liblua5.1-0-dev screen python-dev python-pip bzip2 zlib1g-dev flex autoconf
     pip install --upgrade seesaw
-    su -c "cd /home/archiveteam; git clone https://github.com/ArchiveTeam/spuf-save.git; cd spuf-save; ./get-wget-lua.sh" archiveteam
-    screen su -c "cd /home/archiveteam/spuf-save/; run-pipeline pipeline.py --concurrent 2 --address '127.0.0.1' YOURNICKHERE" archiveteam
+    su -c "cd /home/archiveteam; git clone https://github.com/ArchiveTeam/spuf-grab.git; cd spuf-grab; ./get-wget-lua.sh" archiveteam
+    screen su -c "cd /home/archiveteam/spuf-grab/; run-pipeline pipeline.py --concurrent 2 --address '127.0.0.1' YOURNICKHERE" archiveteam
     [... ctrl+A D to detach ...]
 
 In __Debian Jessie__, the `libgnutls-dev` package was renamed to `libgnutls28-dev`. So, you need to do the following instead:
@@ -92,7 +92,7 @@ You need Homebrew. Ensure that you have the OS X equivalent of bzip2 installed a
     pip install --upgrade seesaw
     [... pretty much the same as above ...]
 
-**There is a known issue with some packaged versions of rsync. If you get errors during the upload stage, spuf-save will not work with your rsync version.**
+**There is a known issue with some packaged versions of rsync. If you get errors during the upload stage, spuf-grab will not work with your rsync version.**
 
 This supposedly fixes it:
 
@@ -107,7 +107,7 @@ Ensure that you have the Arch equivalent of bzip2 installed as well.
 3. Run `pip2 install --upgrade seesaw`.
 4. Modify the run-pipeline script in seesaw to point at `#!/usr/bin/python2` instead of `#!/usr/bin/python`.
 5. `useradd --system --group users --shell /bin/bash --create-home archiveteam`
-6. `screen su -c "cd /home/archiveteam/spuf-save/; run-pipeline pipeline.py --concurrent 2 --address '127.0.0.1' YOURNICKHERE" archiveteam`
+6. `screen su -c "cd /home/archiveteam/spuf-grab/; run-pipeline pipeline.py --concurrent 2 --address '127.0.0.1' YOURNICKHERE" archiveteam`
 
 ### For FreeBSD:
 
