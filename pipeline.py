@@ -58,7 +58,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20170520.01"
+VERSION = "20170521.01"
 USER_AGENT = 'ArchiveTeam'
 TRACKER_ID = 'spuf'
 TRACKER_HOST = 'tracker.archiveteam.org'
@@ -165,6 +165,7 @@ class WgetArgs(object):
             WGET_LUA,
             "-U", USER_AGENT,
             "-nv",
+            "--load-cookies", "cookies.txt",
             #"--no-cookies",
             "--lua-script", "spuf.lua",
             "-o", ItemInterpolation("%(item_dir)s/wget.log"),
@@ -193,6 +194,20 @@ class WgetArgs(object):
 
         item['item_type'] = item_type
         item['item_value'] = item_value
+
+        tries = 0
+        while tries < 10:
+            if os.path.isfile('login.php?do=login'):
+                os.remove('login.php?do=login')
+            os.system("wget --save-cookies cookies.txt --keep-session-cookies --post-data 'vb_login_username=archiveTeam&cookieuser=1&vb_login_password=&s=&securitytoken=guest&do=login&vb_login_md5password=9aa65d84012ee50e456c4e6916089636&vb_login_md5password_utf=9aa65d84012ee50e456c4e6916089636' --referer http://forums.steampowered.com/forums/ http://forums.steampowered.com/forums/login.php?do=login")
+            if not os.path.isfile('login.php?do=login'):
+                continue
+            with open('login.php?do=login') as f:
+                if 'alt="Forum Database Error"' in f.read():
+                    continue
+            break
+        else:
+            raise Exception('Could not log in.')
 
         wget_args.append('http://forums.steampowered.com/forums/showthread.php')
 
