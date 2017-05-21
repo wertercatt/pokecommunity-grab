@@ -246,7 +246,7 @@ project = Project(
     <h2>Steam Users' Forum <span class="links"><a href="http://forums.steampowered.com/forums">Website</a> &middot; <a href="http://tracker.archiveteam.org/spuf-grab/">Leaderboard</a></span></h2>
     <p>Getting killed June 5th.</p>
     """,
-    utc_deadline = datetime.datetime(2017,06,04, 23,59,0)
+    utc_deadline = datetime.datetime(2017, 6, 4, 23, 59, 0)
 )
 
 pipeline = Pipeline(
