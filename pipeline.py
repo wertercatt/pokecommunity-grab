@@ -242,8 +242,8 @@ class WgetArgs(object):
 project = Project(
     title = "Steam Users' Forum",
     project_html = """
-    <img class="project-logo" alt="Steam Logo" src="http://archiveteam.org/images/4/48/Steam_Icon_2014.png" />
-    <h2>Steam Users' Forum <span class="links"><a href="http://forums.steampowered.com/forums">Website</a> &middot; <a href="http://tracker.archiveteam.org/spuf-grab/">Leaderboard</a></span></h2>
+    <img class="project-logo" alt="Steam Logo" src="http://archiveteam.org/images/thumb/4/48/Steam_Icon_2014.png/100px-Steam_Icon_2014.png" />
+    <h2>Steam Users' Forum <span class="links"><a href="http://forums.steampowered.com/forums">Website</a> &middot; <a href="http://tracker.archiveteam.org/spuf/">Leaderboard</a></span></h2>
     <p>Getting killed June 5th.</p>
     """,
     utc_deadline = datetime.datetime(2017, 6, 4, 23, 59, 0)
