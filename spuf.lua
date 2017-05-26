@@ -43,17 +43,17 @@ allowed = function(url, parenturl)
     return false
   end
 
-  if parenturl ~= nil and string.match(parenturl, "postcount=[0-9]+") then
-    return false
-  end
+  --if parenturl ~= nil and string.match(parenturl, "postcount=[0-9]+") then
+  --  return false
+  --end
 
   if string.match(url, "[^a-zA-Z0-9]goto=") or
      string.match(url, "[%?&]do=newreply") or
      string.match(url, "/report%.php") or
      string.match(url, "/sendmessage%.php") or
      string.match(url, "/subscription%.php") or
-     string.match(url, "do=logout") or
-     string.match(url, "/showthread%.php%?p=[0-9]+") then
+     string.match(url, "do=logout") then
+     --string.match(url, "/showthread%.php%?p=[0-9]+") then
     return false
   end
 
@@ -153,8 +153,8 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     if item_type == "threads" then
       for post in string.gmatch(html, 'id="postcount([0-9]+)"') do
         ids[tonumber(post)] = true
-        --check("http://forums.steampowered.com/forums/showthread.php?p=" .. post)
-        --check("http://forums.steampowered.com/forums/showpost.php?p=" .. post)
+        check("http://forums.steampowered.com/forums/showthread.php?p=" .. post)
+        check("http://forums.steampowered.com/forums/showpost.php?p=" .. post)
       end
     end
 
