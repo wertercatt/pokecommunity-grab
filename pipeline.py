@@ -58,7 +58,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20170526.01"
+VERSION = "20170604.01"
 USER_AGENT = 'ArchiveTeam'
 TRACKER_ID = 'spuf'
 TRACKER_HOST = 'tracker.archiveteam.org'
@@ -222,6 +222,11 @@ class WgetArgs(object):
                 wget_args.extend(['--warc-header', 'steam-users-forum-forum: {i}'.format(i=i)])
                 wget_args.append('http://forums.steampowered.com/forums/forumdisplay.php?f={i}&daysprune=-1'.format(i=i))
                 wget_args.append('http://forums.steampowered.com/forums/forumdisplay.php?f={i}'.format(i=i))
+        elif item_type == 'members':
+            start, stop = item_value.split('-')
+            for i in range(int(start), int(stop)+1):
+                wget_args.extend(['--warc-header', 'steam-users-forum-member: {i}'.format(i=i)])
+                wget_args.append('http://forums.steampowered.com/forums/member.php?u={i}'.format(i=i))
         else:
             raise Exception('Unknown item')
 

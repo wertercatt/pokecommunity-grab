@@ -49,9 +49,12 @@ allowed = function(url, parenturl)
 
   if string.match(url, "[^a-zA-Z0-9]goto=") or
      string.match(url, "[%?&]do=newreply") or
+     string.match(url, "[%?&]do=addlist") or
+     string.match(url, "[%?&]do=newpm") or
      string.match(url, "/report%.php") or
      string.match(url, "/sendmessage%.php") or
      string.match(url, "/subscription%.php") or
+     string.match(url, "/search%.php") or
      string.match(url, "do=logout") then
      --string.match(url, "/showthread%.php%?p=[0-9]+") then
     return false
@@ -64,7 +67,7 @@ allowed = function(url, parenturl)
     end
   end
 
-  if (item_type == "threads" or item_type == "forums")
+  if (item_type == "threads" or item_type == "forums" or item_type == "members")
      and string.match(url, "^https?://[^/]*steampowered%.com") then
     for id in string.gmatch(url, "([0-9]+)") do
       if ids[tonumber(id)] == true then
