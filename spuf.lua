@@ -55,7 +55,8 @@ allowed = function(url, parenturl)
      string.match(url, "/sendmessage%.php") or
      string.match(url, "/subscription%.php") or
      string.match(url, "/search%.php") or
-     string.match(url, "do=logout") then
+     string.match(url, "do=logout") or
+     string.match(url, "%[/") then
      --string.match(url, "/showthread%.php%?p=[0-9]+") then
     return false
   end
@@ -86,6 +87,10 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
   --if string.match(url, "[%?&]s=[0-9a-f]+") then
   --  return false
   --end
+
+  if string.match(url, "%[/") then
+    return false
+  end
 
   if (downloaded[url] ~= true and addedtolist[url] ~= true)
      and (allowed(url, parent["url"]) or html == 0) then
