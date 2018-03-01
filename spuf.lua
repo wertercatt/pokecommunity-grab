@@ -161,8 +161,8 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     if item_type == "threads" then
       for post in string.gmatch(html, 'id="postcount([0-9]+)"') do
         ids[tonumber(post)] = true
-        check("http://forums.steampowered.com/forums/showthread.php?p=" .. post)
-        check("http://forums.steampowered.com/forums/showpost.php?p=" .. post)
+        check("http://pokecommunity.com/forums/showthread.php?p=" .. post)
+        check("http://pokecommunity.com/forums/showpost.php?p=" .. post)
       end
     end
 

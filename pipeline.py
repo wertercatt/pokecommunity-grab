@@ -60,7 +60,7 @@ if not WGET_LUA:
 # It will be added to the WARC files and reported to the tracker.
 VERSION = "20170615.01"
 USER_AGENT = 'ArchiveTeam'
-TRACKER_ID = 'spuf'
+TRACKER_ID = 'pokecommunity'
 TRACKER_HOST = 'tracker.archiveteam.org'
 
 
@@ -185,7 +185,7 @@ class WgetArgs(object):
             "--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
             "--warc-header", "operator: Archive Team",
             "--warc-header", "steam-users-forum-dld-script-version: " + VERSION,
-            "--warc-header", ItemInterpolation("steam-users-forum-item: %(item_name)s"),
+            "--warc-header", ItemInterpolation("pokecommunity-item: %(item_name)s"),
         ]
 
         item_name = item['item_name']
@@ -199,7 +199,7 @@ class WgetArgs(object):
         while tries < 10:
             if os.path.isfile('login.php?do=login'):
                 os.remove('login.php?do=login')
-            os.system("wget --save-cookies cookies.txt --user-agent 'ArchiveTeam' --keep-session-cookies --post-data 'vb_login_username=archiveTeam&cookieuser=1&vb_login_password=&s=&securitytoken=guest&do=login&vb_login_md5password=9aa65d84012ee50e456c4e6916089636&vb_login_md5password_utf=9aa65d84012ee50e456c4e6916089636' --referer http://forums.steampowered.com/forums/ http://forums.steampowered.com/forums/login.php?do=login")
+            os.system("wget --save-cookies cookies.txt --user-agent 'ArchiveTeam' --keep-session-cookies --post-data 'vb_login_username=archiveTeam&cookieuser=1&vb_login_password=&s=&securitytoken=guest&do=login&vb_login_md5password=9aa65d84012ee50e456c4e6916089636&vb_login_md5password_utf=9aa65d84012ee50e456c4e6916089636' --referer http://pokecommunity.com http://pokecommunity.com/login.php?do=login")
             if not os.path.isfile('login.php?do=login'):
                 continue
             with open('login.php?do=login') as f:
@@ -209,24 +209,24 @@ class WgetArgs(object):
         else:
             raise Exception('Could not log in.')
 
-        wget_args.append('http://forums.steampowered.com/forums/showthread.php')
+        wget_args.append('http://pokecommunity.com/showthread.php')
 
         if item_type == 'threads':
             start, stop = item_value.split('-')
             for i in range(int(start), int(stop)+1):
                 wget_args.extend(['--warc-header', 'steam-users-forum-thread: {i}'.format(i=i)])
-                wget_args.append('http://forums.steampowered.com/forums/showthread.php?t={i}'.format(i=i))
+                wget_args.append('http://pokecommunity.com/showthread.php?t={i}'.format(i=i))
         elif item_type == 'forums':
             start, stop = item_value.split('-')
             for i in range(int(start), int(stop)+1):
                 wget_args.extend(['--warc-header', 'steam-users-forum-forum: {i}'.format(i=i)])
-                wget_args.append('http://forums.steampowered.com/forums/forumdisplay.php?f={i}&daysprune=-1'.format(i=i))
-                wget_args.append('http://forums.steampowered.com/forums/forumdisplay.php?f={i}'.format(i=i))
+                wget_args.append('http://pokecommunity.com/forumdisplay.php?f={i}&daysprune=-1'.format(i=i))
+                wget_args.append('http://pokecommunity.com/forumdisplay.php?f={i}'.format(i=i))
         elif item_type == 'members':
             start, stop = item_value.split('-')
             for i in range(int(start), int(stop)+1):
                 wget_args.extend(['--warc-header', 'steam-users-forum-member: {i}'.format(i=i)])
-                wget_args.append('http://forums.steampowered.com/forums/member.php?u={i}'.format(i=i))
+                wget_args.append('http://pokecommunity.com/forums/member.php?u={i}'.format(i=i))
         else:
             raise Exception('Unknown item')
 
@@ -258,7 +258,7 @@ pipeline = Pipeline(
     CheckIP(),
     GetItemFromTracker("http://%s/%s" % (TRACKER_HOST, TRACKER_ID), downloader,
         VERSION),
-    PrepareDirectories(warc_prefix="spuf"),
+    PrepareDirectories(warc_prefix="pokecommunity"),
     WgetDownload(
         WgetArgs(),
         max_tries=2,

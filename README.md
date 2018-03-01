@@ -1,4 +1,4 @@
-spuf-grab
+pokecommunity-grab
 =============
 
 More information about the archiving project can be found on the ArchiveTeam wiki: [Steam Users' Forum](http://archiveteam.org/index.php?title=Steam#Steam_Users.27_Forums)
